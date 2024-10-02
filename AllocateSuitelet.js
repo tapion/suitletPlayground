@@ -204,8 +204,8 @@ define([
         id: "custpage_asset",
         type: serverWidget.FieldType.SELECT,
         label: "Asset",
-        source: "customrecord_ncfar_asset",
       });
+      
       populateAssetOptions(
         typeParam,
         fromCustomerParam,
@@ -321,7 +321,7 @@ define([
             id: assetId,
           });
 
-          const memoValue = context.request.getSublistValue({
+          var memoValue = context.request.getSublistValue({
             group: "custpage_assets_sublist",
             name: "custpage_memo",
             line: i,
@@ -566,7 +566,7 @@ define([
 
           totalCreditAmount += creditAmount;
 
-          const memoValue = context.request.getSublistValue({
+          var memoValue = context.request.getSublistValue({
             group: "custpage_assets_sublist",
             name: "custpage_memo",
             line: i,
@@ -713,7 +713,7 @@ define([
           });
           assetIds.push(assetId);
 
-          const memoValue = context.request.getSublistValue({
+          var memoValue = context.request.getSublistValue({
             group: "custpage_assets_sublist",
             name: "custpage_memo",
             line: i,
@@ -886,32 +886,32 @@ define([
       filters.push(["custrecord_asset_iotsite", "anyof", siteId]);
     } else {
       // Skip populating assets if the required fields are not set
-      // assetField.addSelectOption({
-      //     value: '',
-      //     text: ''
-      // }); // Add blank option
-      // return;
+      assetField.addSelectOption({
+          value: '',
+          text: ''
+      }); // Add blank option
+      return;
     }
 
-    // var assetSearch = search.create({
-    //     type: 'customrecord_ncfar_asset',
-    //     filters: filters,
-    //     columns: ['internalid', 'name', 'altname','custrecord_assetserialno']
-    // });
+    var assetSearch = search.create({
+        type: 'customrecord_ncfar_asset',
+        filters: filters,
+        columns: ['internalid', 'name', 'altname','custrecord_assetserialno']
+    });
 
-    // assetField.addSelectOption({
-    //     value: '',
-    //     text: ''
-    // }); // Add blank option
+    assetField.addSelectOption({
+        value: '',
+        text: ''
+    }); // Add blank option
 
-    // assetSearch.run().each(function (result) {
-    //     var assetText = result.getValue('name') + ' ' + result.getValue('altname');
-    //     assetField.addSelectOption({
-    //         value: result.getValue('internalid'),
-    //         text: assetText
-    //     });
-    //     return true;
-    // });
+    assetSearch.run().each(function (result) {
+        var assetText = result.getValue('name') + ' ' + result.getValue('altname');
+        assetField.addSelectOption({
+            value: result.getValue('internalid'),
+            text: assetText
+        });
+        return true;
+    });
   }
 
   function parseDate(dateString) {
