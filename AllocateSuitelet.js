@@ -205,7 +205,7 @@ define([
         type: serverWidget.FieldType.SELECT,
         label: "Asset",
       });
-      
+
       populateAssetOptions(
         typeParam,
         fromCustomerParam,
@@ -507,7 +507,10 @@ define([
         var subsidiaryId = 12;
         var currencyId = 1;
         var accountDebit = 1112;
+        var accountDebitDepreciation = 312;
+        var accountCreditDepreciation = 1109;
         var totalCreditAmount = 0;
+        var totalAccDepreciation = 0;
 
         // Create custom transaction
         var transaction = record.create({
@@ -560,6 +563,12 @@ define([
           var accountCredit = assetRecord.getValue({
             fieldId: "custrecord_assetmainacc",
           });
+
+          var accDepreciation = assetRecord.getValue({
+            fieldId: "custrecord_assetdeprtodate",
+          });
+          totalAccDepreciation += accDepreciation
+
           var creditAmount = assetRecord.getValue({
             fieldId: "custrecord_assetbookvalue",
           });
@@ -609,6 +618,40 @@ define([
           sublistId: "line",
           fieldId: "debit",
           value: totalCreditAmount,
+        });
+        transaction.commitLine({
+          sublistId: "line",
+        });
+
+        // Add debit line
+        transaction.selectNewLine({
+          sublistId: "line",
+        });
+        transaction.setCurrentSublistValue({
+          sublistId: "line",
+          fieldId: "account",
+          value: accountCreditDepreciation,
+        });
+        transaction.setCurrentSublistValue({
+          sublistId: "line",
+          fieldId: "credit",
+          value: totalAccDepreciation,
+        });
+        transaction.commitLine({
+          sublistId: "line",
+        });
+        transaction.selectNewLine({
+          sublistId: "line",
+        });
+        transaction.setCurrentSublistValue({
+          sublistId: "line",
+          fieldId: "account",
+          value: accountDebitDepreciation,
+        });
+        transaction.setCurrentSublistValue({
+          sublistId: "line",
+          fieldId: "debit",
+          value: totalAccDepreciation,
         });
         transaction.commitLine({
           sublistId: "line",
