@@ -456,52 +456,70 @@ define([
           assetRecordToUpdate.save();
 
           // Crear Fam Usage para Assets Nuevos, Create the new custom record
-
-          var assetUsageRecord = record.create({
+          var temporal = search.create({
             type: "customrecord_ncfar_assetusage",
-            isDynamic: true,
+            filters: [
+              ["custrecord_usageassetid", "is", assetIds[j]],
+              "AND",
+              [
+                "custrecord_usageperiod",
+                "is",
+                getMonthInLetters(allocationdate) + " " + allocationdate.getFullYear(),
+              ],
+            ],
+            columns: ["custrecord_usageassetid"],
           });
+          log.debug("temporal MV", temporal);
+          var searchResultCount = temporal.runPaged().count;
+          log.debug("searchResultCount MV", searchResultCount);
 
-          log.debug("allocationdate EA", allocationdate);
-          log.debug("asset number", assetIds[j]);
+          if (searchResultCount == 0) {
+            var assetUsageRecord = record.create({
+              type: "customrecord_ncfar_assetusage",
+              isDynamic: true,
+            });
 
-          // Get the last day of the month
-          var lastDayOfMonth = new Date(
-            allocationdate.getFullYear(),
-            allocationdate.getMonth() + 1,
-            0
-          );
-          log.debug("lastDayOfMonth", lastDayOfMonth);
+            log.debug("allocationdate EA", allocationdate);
+            log.debug("asset number", assetIds[j]);
 
-          // Set the values
-          assetUsageRecord.setValue({
-            fieldId: "custrecord_usageassetid",
-            value: assetIds[j],
-          });
+            // Get the last day of the month
+            var lastDayOfMonth = new Date(
+              allocationdate.getFullYear(),
+              allocationdate.getMonth() + 1,
+              0
+            );
+            log.debug("lastDayOfMonth", lastDayOfMonth);
 
-          // Get the three-letter abbreviation of the month
-          var monthAbbreviation = getMonthInLetters(allocationdate);
-          log.debug("monthAbbreviation", monthAbbreviation);
+            // Set the values
+            assetUsageRecord.setValue({
+              fieldId: "custrecord_usageassetid",
+              value: assetIds[j],
+            });
 
-          // Set the usageUnitPeriod to the three-letter month abbreviation and the year
-          var usagePeriod =
-            monthAbbreviation + " " + allocationdate.getFullYear();
-          log.debug("usagePeriod", usagePeriod);
+            // Get the three-letter abbreviation of the month
+            var monthAbbreviation = getMonthInLetters(allocationdate);
+            log.debug("monthAbbreviation", monthAbbreviation);
 
-          assetUsageRecord.setValue({
-            fieldId: "custrecord_usagedate",
-            value: lastDayOfMonth,
-          });
-          assetUsageRecord.setValue({
-            fieldId: "custrecord_usageperiod",
-            value: usagePeriod,
-          });
-          assetUsageRecord.setValue({
-            fieldId: "custrecord_usageunits",
-            value: 1,
-          });
+            // Set the usageUnitPeriod to the three-letter month abbreviation and the year
+            var usagePeriod =
+              monthAbbreviation + " " + allocationdate.getFullYear();
+            log.debug("usagePeriod", usagePeriod);
 
-          assetUsageRecord.save();
+            assetUsageRecord.setValue({
+              fieldId: "custrecord_usagedate",
+              value: lastDayOfMonth,
+            });
+            assetUsageRecord.setValue({
+              fieldId: "custrecord_usageperiod",
+              value: usagePeriod,
+            });
+            assetUsageRecord.setValue({
+              fieldId: "custrecord_usageunits",
+              value: 1,
+            });
+
+            assetUsageRecord.save();
+          }
         }
       } else if (type === "customer") {
         var subsidiaryId = 12;
@@ -567,7 +585,7 @@ define([
           var accDepreciation = assetRecord.getValue({
             fieldId: "custrecord_assetdeprtodate",
           });
-          totalAccDepreciation += accDepreciation
+          totalAccDepreciation += accDepreciation;
 
           var creditAmount = assetRecord.getValue({
             fieldId: "custrecord_assetbookvalue",
@@ -930,30 +948,31 @@ define([
     } else {
       // Skip populating assets if the required fields are not set
       assetField.addSelectOption({
-          value: '',
-          text: ''
+        value: "",
+        text: "",
       }); // Add blank option
       return;
     }
 
     var assetSearch = search.create({
-        type: 'customrecord_ncfar_asset',
-        filters: filters,
-        columns: ['internalid', 'name', 'altname','custrecord_assetserialno']
+      type: "customrecord_ncfar_asset",
+      filters: filters,
+      columns: ["internalid", "name", "altname", "custrecord_assetserialno"],
     });
 
     assetField.addSelectOption({
-        value: '',
-        text: ''
+      value: "",
+      text: "",
     }); // Add blank option
 
     assetSearch.run().each(function (result) {
-        var assetText = result.getValue('name') + ' ' + result.getValue('altname');
-        assetField.addSelectOption({
-            value: result.getValue('internalid'),
-            text: assetText
-        });
-        return true;
+      var assetText =
+        result.getValue("name") + " " + result.getValue("altname");
+      assetField.addSelectOption({
+        value: result.getValue("internalid"),
+        text: assetText,
+      });
+      return true;
     });
   }
 
