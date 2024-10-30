@@ -3,7 +3,7 @@
  * @NScriptType UserEventScript
  */
 define(["N/record", "N/search"], function (record, search) {
-  function beforeSubmit(context) {
+  function afterSubmit(context) {
     if (context.type !== context.UserEventType.CREATE) return;
 
     var itemReceipt = context.newRecord;
@@ -15,9 +15,7 @@ define(["N/record", "N/search"], function (record, search) {
     });
     var createdFromId = returnaut.getValue({ fieldId: "createdfrom" });
 
-    // Asegurarse de que el Item Receipt está relacionado con una Sales Order
     if (createdFromId) {
-      // Cargar la Sales Order para obtener el Average Cost
       var salesOrder = record.load({
         type: "salesorder",
         id: createdFromId,
@@ -35,34 +33,17 @@ define(["N/record", "N/search"], function (record, search) {
         log.debug("item", item);
         var average = getAverageCost(salesOrder, item);
         log.debug("average", average);
-        itemReceipt.setSublistValue({
-          sublistId: "item",
-          fieldId: "overriderate",
-          line: i,
-          value: average || 0, // Default a 0 si no hay costo promedio
+        var valuesToSave = {};
+        valuesToSave["item." + i + ".overriderate"] = average || 0;
+        record.submitFields({
+          type: "itemreceipt",
+          id: itemReceipt.id,
+          values: valuesToSave,
+          options: {
+            enableSourcing: false,
+            ignoreMandatoryFields: true,
+          },
         });
-        itemReceipt.setSublistValue({
-          sublistId: "item",
-          fieldId: "itemdescription",
-          line: i,
-          value: 'Miguel, ahii Miguel', // Default a 0 si no hay costo promedio
-        });
-
-        // Obtener el valor del Average Cost desde la Sales Order
-        // var averageCost = salesOrder.getSublistValue({
-        //   sublistId: "item",
-        //   fieldId: "averagecost", // Campo AVERAGE COST en la Sales Order
-        //   line: i,
-        // });
-        // log.debug("id", i);
-        // log.debug("average cost", averageCost);
-        // // Asignar el valor al campo Override Rate en el Item Receipt
-        // itemReceipt.setSublistValue({
-        //   sublistId: "item",
-        //   fieldId: "custcol_average_cost_so",
-        //   line: i,
-        //   value: averageCost || 0, // Default a 0 si no hay costo promedio
-        // });
       }
     }
   }
@@ -74,7 +55,6 @@ define(["N/record", "N/search"], function (record, search) {
       var item = salesOrder.getSublistValue({
         sublistId: "item",
         fieldId: "item",
-        // fieldId: 'averagecost', // Campo AVERAGE COST en la Sales Order
         line: i,
       });
       log.debug("Sales Order Item", item);
@@ -89,6 +69,6 @@ define(["N/record", "N/search"], function (record, search) {
   }
 
   return {
-    beforeSubmit: beforeSubmit,
+    afterSubmit: afterSubmit,
   };
 });
