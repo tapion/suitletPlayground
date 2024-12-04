@@ -133,6 +133,18 @@ define([
         container: "custpage_allocation_info_group",
       });
 
+      var totalField = form.addField({
+        id: "custpage_total_amount",
+        type: serverWidget.FieldType.CURRENCY,
+        label: "Total Amount",
+        container: "custpage_allocation_info_group",
+      });
+      
+      totalField.defaultValue = "0.00";
+      totalField.updateDisplayType({
+        displayType: serverWidget.FieldDisplayType.INLINE,
+      });
+
       // Populate site options based on customer parameters
       populateSiteOptions(toCustomerParam, toSiteField, toSiteParam);
       populateSiteOptions(fromCustomerParam, fromSiteField, fromSiteParam);

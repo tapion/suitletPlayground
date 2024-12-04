@@ -36,12 +36,13 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
 
             window.location.href = suiteletUrl;
         }
-
+// custrecord_assetbookvalue
         // Ensure unique asset selection in the sublist
         if (context.sublistId === 'custpage_assets_sublist' && fieldId === 'custpage_asset') {
             var selectedAssets = [];
             var lineCount = rec.getLineCount({ sublistId: 'custpage_assets_sublist' });
-
+            var accItems = 0;
+            var amountTmp = 0;
             for (var i = 0; i < lineCount; i++) {
                 if (i !== context.line) {
                     var asset = rec.getSublistValue({
@@ -51,6 +52,14 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
                     });
                     selectedAssets.push(asset);
                 }
+                var amount = parseFloat(
+                    rec.getSublistValue({
+                      sublistId: "custpage_assets_sublist",
+                      fieldId: "custpage_amount",
+                      line: i,
+                    }) || 0
+                  );
+                  accItems += amount;
             }
 
             var currentAsset = rec.getCurrentSublistValue({
@@ -66,6 +75,7 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
                     value: ''
                 });
             } else {
+                
                 // Set default value for Qty to 1
                 rec.setCurrentSublistValue({
                     sublistId: 'custpage_assets_sublist',
@@ -75,6 +85,7 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
 
                 // Get the current cost for the selected asset
                 var AssetBookValue = getAssetBookValue(currentAsset);
+                amountTmp = parseFloat(AssetBookValue);
                 rec.setCurrentSublistValue({
                     sublistId: 'custpage_assets_sublist',
                     fieldId: 'custpage_amount',
@@ -88,8 +99,38 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
                 value: AssetName
                 });
             }
+            rec.setValue({
+                fieldId: "custpage_total_amount",
+                value: (accItems + amountTmp),
+              });
+
         }
     }
+
+    function sublistChanged(context) {
+        if (context.sublistId === 'custpage_assets_sublist') {
+            var rec = context.currentRecord;
+            var totalAmount = 0;
+            var lineCount = rec.getLineCount({ sublistId: 'custpage_assets_sublist' });
+    
+            for (var i = 0; i < lineCount; i++) {
+                var amount = parseFloat(
+                    rec.getSublistValue({
+                        sublistId: 'custpage_assets_sublist',
+                        fieldId: 'custpage_amount',
+                        line: i
+                    }) || 0
+                );
+                totalAmount += amount;
+            }
+    
+            rec.setValue({
+                fieldId: 'custpage_total_amount',
+                value: totalAmount.toFixed(2)
+            });
+        }
+    }
+    
 
     function getAssetBookValue(assetId) {
         if (!assetId) return 0;
@@ -126,6 +167,7 @@ define(['N/url', 'N/currentRecord', 'N/record', 'N/search'], function(url, curre
     }
 
     return {
-        fieldChanged: fieldChanged
+        fieldChanged: fieldChanged,
+        sublistChanged: sublistChanged
     };
 });
