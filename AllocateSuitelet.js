@@ -387,6 +387,11 @@ define([
           fieldId: "debit",
           value: totalCreditAmount,
         });
+        transaction.setValue({
+          fieldId: "custbody_total_amount_allocinst",
+          value: totalCreditAmount,
+        });
+
         transaction.commitLine({
           sublistId: "line",
         });
@@ -687,6 +692,11 @@ define([
           sublistId: "line",
         });
 
+        transaction.setValue({
+          fieldId: "custbody_total_amount_allocinst",
+          value: totalCreditAmount + totalAccDepreciation,
+        });
+
         var transactionId = transaction.save();
 
         // Update each asset with the created transaction ID and other fields
@@ -846,6 +856,11 @@ define([
         });
         transaction.commitLine({
           sublistId: "line",
+        });
+
+        transaction.setValue({
+          fieldId: "custbody_total_amount_allocinst",
+          value: totalCreditAmount,
         });
 
         var transactionId = transaction.save();
