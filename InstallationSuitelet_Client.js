@@ -49,12 +49,11 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
       sublistName === "custpage_transaction_sublist" &&
       fieldId === "custpage_transaction_select"
     ) {
-      accItems = 0
+      accItems = 0;
       var lineCount = rec.getLineCount({
         sublistId: "custpage_transaction_sublist",
       });
       var amountField = "custpage_asset_tran_cost";
-      console.log('lineCount', lineCount)
       for (var i = 0; i < lineCount; i++) {
         var amount = parseFloat(
           rec.getSublistValue({
@@ -63,28 +62,23 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
             line: i,
           }) || 0
         );
-        console.log('amount', amount)
         accItems += amount;
       }
-      console.log('accItems', accItems)
       var tranId = rec.getCurrentSublistValue({
         sublistId: sublistName,
         fieldId: "custpage_transaction_select",
       });
-      console.log('tranId', tranId)
       var [transactionId, lineUniqueKey] = tranId.split("-");
-      var tranCost = getTransCost(lineUniqueKey)
-      console.log('tranCost', tranCost)
-      
+      var tranCost = getTransCost(lineUniqueKey);
+
       rec.setCurrentSublistValue({
         sublistId: sublistName,
         fieldId: "custpage_asset_tran_cost",
         value: tranCost,
       });
-      // 
       rec.setValue({
         fieldId: "custpage_total_tran_cost",
-        value: (parseFloat(tranCost) + accItems),
+        value: parseFloat(tranCost) + accItems,
       });
     }
   }
@@ -103,9 +97,7 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
   function getTransCost(lineUniqueKey) {
     var transactionSearch = search.create({
       type: "transaction",
-      filters: [
-        ["lineuniquekey", search.Operator.EQUALTO, lineUniqueKey],
-      ],
+      filters: [["lineuniquekey", search.Operator.EQUALTO, lineUniqueKey]],
       columns: ["debitamount"],
     });
 
@@ -202,6 +194,30 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
 
       rec.setValue({
         fieldId: "custpage_total_amount",
+        value: totalAmount.toFixed(2),
+      });
+    }
+    if (context.sublistId === "custpage_transaction_sublist") {
+      var rec = context.currentRecord;
+      var totalAmount = 0;
+      var lineCount = rec.getLineCount({
+        sublistId: context.sublistId,
+      });
+      var amountField = "custpage_asset_tran_cost";
+
+      for (var i = 0; i < lineCount; i++) {
+        var amount = parseFloat(
+          rec.getSublistValue({
+            sublistId: context.sublistId,
+            fieldId: amountField,
+            line: i,
+          }) || 0
+        );
+        totalAmount += amount;
+      }
+
+      rec.setValue({
+        fieldId: "custpage_total_tran_cost",
         value: totalAmount.toFixed(2),
       });
     }
