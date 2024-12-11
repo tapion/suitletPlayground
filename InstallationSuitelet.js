@@ -108,6 +108,14 @@ define([
         });
       });
 
+      var costTranField = transactionSublist.addField({
+        id: "custpage_asset_tran_cost",
+        type: serverWidget.FieldType.CURRENCY,
+        label: "Amount",
+      });
+      costTranField.updateDisplayType({
+        displayType: serverWidget.FieldDisplayType.DISABLED,
+      });
       form.addSubmitButton({
         label: "Submit",
       });
@@ -135,7 +143,18 @@ define([
       totalField.updateDisplayType({
         displayType: serverWidget.FieldDisplayType.INLINE,
       });
-      totalField.isMandatory = false;
+
+      var totalTranCost = form.addField({
+        id: "custpage_total_tran_cost",
+        type: serverWidget.FieldType.CURRENCY,
+        label: "Total Transaction Cost",
+      });
+
+      totalTranCost.defaultValue = "0.00";
+      totalTranCost.updateDisplayType({
+        displayType: serverWidget.FieldDisplayType.INLINE,
+      });
+
       filterTypeField.addSelectOption({ value: "", text: "" });
       filterTypeField.addSelectOption({
         value: "VendBill",

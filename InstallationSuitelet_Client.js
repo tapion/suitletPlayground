@@ -7,7 +7,7 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
     var rec = context.currentRecord;
     var sublistName = context.sublistId;
     var fieldId = context.fieldId;
-    console.log('Entro 1')
+    var accItems = 0;
     // Handle asset cost update
     if (
       sublistName === "custpage_assets_sublist" &&
@@ -16,7 +16,6 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
       var lineCount = rec.getLineCount({
         sublistId: "custpage_assets_sublist",
       });
-      var accItems = 0;
       var amountTmp = 0;
       for (var i = 0; i < lineCount; i++) {
         var amount = parseFloat(
@@ -42,7 +41,50 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
       });
       rec.setValue({
         fieldId: "custpage_total_amount",
-        value: (accItems + amountTmp),
+        value: accItems + amountTmp,
+      });
+    }
+
+    if (
+      sublistName === "custpage_transaction_sublist" &&
+      fieldId === "custpage_transaction_select"
+    ) {
+      accItems = 0
+      var lineCount = rec.getLineCount({
+        sublistId: "custpage_transaction_sublist",
+      });
+      var amountField = "custpage_asset_tran_cost";
+      console.log('lineCount', lineCount)
+      for (var i = 0; i < lineCount; i++) {
+        var amount = parseFloat(
+          rec.getSublistValue({
+            sublistId: sublistName,
+            fieldId: amountField,
+            line: i,
+          }) || 0
+        );
+        console.log('amount', amount)
+        accItems += amount;
+      }
+      console.log('accItems', accItems)
+      var tranId = rec.getCurrentSublistValue({
+        sublistId: sublistName,
+        fieldId: "custpage_transaction_select",
+      });
+      console.log('tranId', tranId)
+      var [transactionId, lineUniqueKey] = tranId.split("-");
+      var tranCost = getTransCost(lineUniqueKey)
+      console.log('tranCost', tranCost)
+      
+      rec.setCurrentSublistValue({
+        sublistId: sublistName,
+        fieldId: "custpage_asset_tran_cost",
+        value: tranCost,
+      });
+      // 
+      rec.setValue({
+        fieldId: "custpage_total_tran_cost",
+        value: (parseFloat(tranCost) + accItems),
       });
     }
   }
@@ -56,6 +98,22 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
     });
 
     return cost.custrecord_assetbookvalue || 0; // Return the cost or 0 if not found
+  }
+
+  function getTransCost(lineUniqueKey) {
+    var transactionSearch = search.create({
+      type: "transaction",
+      filters: [
+        ["lineuniquekey", search.Operator.EQUALTO, lineUniqueKey],
+      ],
+      columns: ["debitamount"],
+    });
+
+    var transactionResults = transactionSearch
+      .run()
+      .getRange({ start: 0, end: 1 });
+    var accountId = transactionResults[0].getValue("debitamount");
+    return accountId || 0; // Return the cost or 0 if not found
   }
 
   // Validate line before adding to the sublist
@@ -124,33 +182,35 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
   }
 
   function sublistChanged(context) {
-    if (context.sublistId === 'custpage_assets_sublist') {
-        var rec = context.currentRecord;
-        var totalAmount = 0;
-        var lineCount = rec.getLineCount({ sublistId: 'custpage_assets_sublist' });
+    if (context.sublistId === "custpage_assets_sublist") {
+      var rec = context.currentRecord;
+      var totalAmount = 0;
+      var lineCount = rec.getLineCount({
+        sublistId: "custpage_assets_sublist",
+      });
 
-        for (var i = 0; i < lineCount; i++) {
-            var amount = parseFloat(
-                rec.getSublistValue({
-                    sublistId: 'custpage_assets_sublist',
-                    fieldId: 'custpage_asset_cost',
-                    line: i
-                }) || 0
-            );
-            totalAmount += amount;
-        }
+      for (var i = 0; i < lineCount; i++) {
+        var amount = parseFloat(
+          rec.getSublistValue({
+            sublistId: "custpage_assets_sublist",
+            fieldId: "custpage_asset_cost",
+            line: i,
+          }) || 0
+        );
+        totalAmount += amount;
+      }
 
-        rec.setValue({
-            fieldId: 'custpage_total_amount',
-            value: totalAmount.toFixed(2)
-        });
+      rec.setValue({
+        fieldId: "custpage_total_amount",
+        value: totalAmount.toFixed(2),
+      });
     }
-}
+  }
 
   return {
     fieldChanged: fieldChanged,
     validateLine: validateLine,
     saveRecord: saveRecord,
-    sublistChanged: sublistChanged
+    sublistChanged: sublistChanged,
   };
 });
