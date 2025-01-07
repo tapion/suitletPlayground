@@ -139,7 +139,7 @@ define([
         label: "Total Amount",
         container: "custpage_allocation_info_group",
       });
-      
+
       totalField.defaultValue = "0.00";
       totalField.updateDisplayType({
         displayType: serverWidget.FieldDisplayType.INLINE,
@@ -481,12 +481,13 @@ define([
               [
                 "custrecord_usageperiod",
                 "is",
-                getMonthInLetters(allocationdate) + " " + allocationdate.getFullYear(),
+                getMonthInLetters(allocationdate) +
+                  " " +
+                  allocationdate.getFullYear(),
               ],
             ],
             columns: ["custrecord_usageassetid"],
           });
-          log.debug("temporal MV", temporal);
           var searchResultCount = temporal.runPaged().count;
           log.debug("searchResultCount MV", searchResultCount);
 
@@ -705,7 +706,12 @@ define([
             type: "customrecord_ncfar_asset",
             id: assetIds[j],
           });
-
+          var assetBookValue = assetRecordToUpdate.getValue({
+            fieldId: "custrecord_assetbookvalue",
+          });
+          var assetlifeunits = assetRecordToUpdate.getValue({
+            fieldId: "custrecord_assetlifeunits",
+          });
           var toCustomerId = context.request.parameters.custpage_to_customer;
           var toSiteId = context.request.parameters.custpage_to_site;
 
@@ -744,6 +750,52 @@ define([
           assetRecordToUpdate.setValue({
             fieldId: "custrecord_assettype",
             value: 1,
+          });
+
+          log.debug("Current cost to update", assetBookValue);
+          assetRecordToUpdate.setValue({
+            fieldId: "custrecord_assetcost",
+            value: assetBookValue,
+          });
+          assetRecordToUpdate.setValue({
+            fieldId: "custrecord_assetcurrentcost",
+            value: assetBookValue,
+          });
+
+          var temporal1 = search.create({
+            type: "customrecord_ncfar_assetusage",
+            filters: [
+              ["custrecord_usageassetid", "is", assetIds[j]],
+              "AND",
+              ["custrecord_accountedcheck", "is", "F"],
+            ],
+            columns: ["custrecord_usageperiod"],
+          });
+          log.debug("Total movimientos query ", temporal1);
+          // var searchResultCount1 = temporal1.runPaged().count;
+          var ussageMonths = [];
+          temporal1.run().each(function (result) {
+            var recordId = result.id;
+            var month = result.getValue("custrecord_usageperiod");
+            log.debug("Total movimientos custrecord_usageperiod ", month);
+            if (ussageMonths.indexOf(month) === -1) {
+              ussageMonths.push(month);
+            }
+
+            record.submitFields({
+              type: "customrecord_ncfar_assetusage",
+              id: recordId,
+              values: {
+                custrecord_accountedcheck: "T",
+              },
+            });
+            return true;
+          });
+          log.debug("Total movimientos", ussageMonths.length);
+
+          assetRecordToUpdate.setValue({
+            fieldId: "custrecord_assetlifeunits",
+            value: assetlifeunits - ussageMonths.length,
           });
 
           assetRecordToUpdate.save();

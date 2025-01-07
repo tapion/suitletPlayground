@@ -35,6 +35,7 @@ define([
       log.debug("assetSearch", assetSearch);
       var currentDate = new Date();
       var assetCount = 0;
+      var created = 0;
       var formattedDateRow = format.parse({
         value: currentDate,
         type: format.Type.DATE,
@@ -60,8 +61,9 @@ define([
         log.debug("temporal", temporal);
 
         var searchResultCount = temporal.runPaged().count;
+        assetCount++;
 
-        log.debug("searchResultCount MV", searchResultCount);
+        log.debug("Consultas realizadas", assetCount);
 
         if (searchResultCount == 0) {
           // currentDate
@@ -88,10 +90,12 @@ define([
             fieldId: "custrecord_usageunits",
             value: 1,
           });
-
+          created++;
+          log.debug("Creo: ",created );
           assetUsageRecord.save();
         }
-        return true;
+
+        return true; // Continue processing
       });
       log.debug("Hola se termino 1");
       log.audit("Script Completed", "Processed " + assetCount + " assets.");
