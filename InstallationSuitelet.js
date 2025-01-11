@@ -173,7 +173,6 @@ define([
       form.addButton({
         id: "custpage_apply_filters",
         label: "Apply Filters",
-        functionName: "applyFilters",
       });
 
       context.response.writePage(form);
@@ -295,26 +294,26 @@ define([
 
             totalCreditAmount += parseFloat(debitAmount);
 
-            var transaction = record.load({
-              type: transactionType,
-              id: transactionId,
-            });
+            // var transaction = record.load({
+            //   type: transactionType,
+            //   id: transactionId,
+            // });
 
-            transaction.setSublistValue({
-              sublistId: "line",
-              fieldId: "custcol_asset_ins_journal",
-              line: parseInt(lineIndex, 10) - 1, // Use the line index from search
-              value: transactionRecord.id,
-            });
-            transaction.save();
+            // transaction.setSublistValue({
+            //   sublistId: "line",
+            //   fieldId: "custcol_asset_ins_journal",
+            //   line: parseInt(lineIndex, 10) - 1, // Use the line index from search
+            //   value: transactionRecord.id,
+            // });
+            // transaction.save();
 
-            log.debug("Updated Transaction", {
-              transactionId: transactionId,
-              lineIndex: lineIndex,
-              journalId: transactionRecord.id,
-            });
+            // log.debug("Updated Transaction", {
+            //   transactionId: transactionId,
+            //   lineIndex: lineIndex,
+            //   journalId: transactionRecord.id,
+            // });
           } else {
-            throw new Error("Unable to find transaction line details.");
+            
           }
         }
 
@@ -482,20 +481,8 @@ define([
   }
 
   function getTransactions(filterDate, filterType) {
-    var now = new Date();
-    var startOfYear = new Date(now.getFullYear(), 0, 1);
-
     var filters = [
       ["subsidiary", search.Operator.ANYOF, "12"],
-      "AND",
-      [
-        "trandate",
-        search.Operator.ONORAFTER,
-        format.format({
-          value: startOfYear,
-          type: format.Type.DATE,
-        }),
-      ],
       "AND",
       ["type", search.Operator.ANYOF, ["VendBill", "Journal", "ExpRept"]],
       "AND",
@@ -507,7 +494,6 @@ define([
       "AND",
       ["custcol_asset_ins_journal", search.Operator.ISEMPTY, ""],
     ];
-
     if (filterDate) {
       filters.push("AND", [
         "trandate",
