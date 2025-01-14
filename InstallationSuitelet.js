@@ -13,8 +13,9 @@ define([
 ], function (serverWidget, search, log, format, record, url, redirect) {
   function onRequest(context) {
     var parameters = context.request.parameters;
-    var filterDate = parameters.filter_date || "";
-    var filterType = parameters.filter_type || "";
+    var filterInitDate = parameters.filterInitDate || "";
+    var filterEndDate = parameters.filterEndDate || "";
+    var filterType = parameters.filterType || "";
 
     if (context.request.method === "GET") {
       var form = serverWidget.createForm({
@@ -59,30 +60,21 @@ define([
         displayType: serverWidget.FieldDisplayType.DISABLED,
       });
 
-      var transactionCostSubtab = form.addSubtab({
+      form.addSubtab({
         id: "custpage_transaction_cost_subtab",
         label: "Transaction Cost",
       });
 
-      var transactionCostTab = form.addTab({
+      form.addTab({
         id: "custpage_transactions_subtab",
         label: "Transaction Costs",
       });
 
-      var startDateField = form.addField({
+      form.addField({
         id: "custpage_start_date",
         type: serverWidget.FieldType.DATE,
         label: "Transaction Date",
       });
-
-      var now = new Date();
-      var firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      startDateField.defaultValue = filterDate
-        ? formatDate(filterDate)
-        : format.format({
-            value: firstDayCurrentMonth,
-            type: format.Type.DATE,
-          });
 
       var transactionSublist = form.addSublist({
         id: "custpage_transaction_sublist",
@@ -98,7 +90,11 @@ define([
       });
 
       transactionField.addSelectOption({ value: "", text: "" }); // Add blank option
-      var transactions = getTransactions(filterDate, filterType);
+      var transactions = getTransactions(
+        filterInitDate,
+        filterEndDate,
+        filterType
+      );
       transactions.forEach(function (transaction) {
         var optionText =
           transaction.text + " - LineID: " + transaction.lineuniquekey;
@@ -120,12 +116,22 @@ define([
         label: "Submit",
       });
 
-      var filterDateField = form.addField({
-        id: "custpage_filter_date",
+      var filterInitDateField = form.addField({
+        id: "custpage_filter_date_initial",
         type: serverWidget.FieldType.DATE,
-        label: "Filter Date",
+        label: "Filter Initial Date",
       });
-      filterDateField.defaultValue = filterDate ? formatDate(filterDate) : "";
+      var filterEndDateField = form.addField({
+        id: "custpage_filter_date_final",
+        type: serverWidget.FieldType.DATE,
+        label: "Filter Final Date",
+      });
+      filterInitDateField.defaultValue = filterInitDate
+        ? filterInitDate
+        : "";
+      filterEndDateField.defaultValue = filterEndDate
+        ? filterEndDate
+        : "";
 
       var filterTypeField = form.addField({
         id: "custpage_filter_type",
@@ -164,21 +170,17 @@ define([
         value: "Journal",
         text: "Journal Entry",
       });
-      filterTypeField.addSelectOption({
-        value: "ExpRept",
-        text: "Expense Report",
-      });
       filterTypeField.defaultValue = filterType;
 
       form.addButton({
         id: "custpage_apply_filters",
         label: "Apply Filters",
+        functionName: "applyFilters",
       });
 
       context.response.writePage(form);
     } else {
       try {
-        
         var subsidiaryId = 12;
         var currencyId = 1;
         var transactionDate = context.request.parameters.custpage_start_date;
@@ -247,8 +249,6 @@ define([
             transactionType = "journalentry";
           } else if (transactionType === "VendBill") {
             transactionType = "vendorbill";
-          } else if (transactionType === "ExpRept") {
-            transactionType = "expensereport";
           }
 
           log.debug("Transaction Details", {
@@ -313,7 +313,6 @@ define([
             //   journalId: transactionRecord.id,
             // });
           } else {
-            
           }
         }
 
@@ -480,11 +479,11 @@ define([
     return options;
   }
 
-  function getTransactions(filterDate, filterType) {
+  function getTransactions(initDate, endDate, filterType) {
     var filters = [
       ["subsidiary", search.Operator.ANYOF, "12"],
       "AND",
-      ["type", search.Operator.ANYOF, ["VendBill", "Journal", "ExpRept"]],
+      ["type", search.Operator.ANYOF, ["VendBill", "Journal"]],
       "AND",
       ["account", search.Operator.ANYOF, "1111"],
       "AND",
@@ -494,14 +493,18 @@ define([
       "AND",
       ["custcol_asset_ins_journal", search.Operator.ISEMPTY, ""],
     ];
-    if (filterDate) {
+    if (initDate) {
       filters.push("AND", [
         "trandate",
         search.Operator.ONORAFTER,
-        format.parse({
-          value: filterDate,
-          type: format.Type.DATE,
-        }),
+        initDate,
+      ]);
+    }
+    if (endDate) {
+      filters.push("AND", [
+        "trandate",
+        search.Operator.ONORBEFORE,
+        endDate,
       ]);
     }
 

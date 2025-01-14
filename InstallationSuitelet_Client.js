@@ -2,7 +2,7 @@
  * @NApiVersion 2.x
  * @NScriptType ClientScript
  */
-define(["N/currentRecord", "N/search"], function (currentRecord, search) {
+define(["N/currentRecord", "N/search", 'N/url'], function (currentRecord, search, url) {
   function fieldChanged(context) {
     var rec = context.currentRecord;
     var sublistName = context.sublistId;
@@ -223,10 +223,39 @@ define(["N/currentRecord", "N/search"], function (currentRecord, search) {
     }
   }
 
+  function formatDateForNetSuite(date) {
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var year = date.getFullYear();
+    return day + "/" + month + "/" + year;
+  }
+
+  function applyFilters() {
+    var rec = currentRecord.get();
+    var initDate = formatDateForNetSuite(
+      rec.getValue({ fieldId: "custpage_filter_date_initial" })
+    );
+    var finalDate = formatDateForNetSuite(
+      rec.getValue({ fieldId: "custpage_filter_date_final" })
+    );
+    var filterType = rec.getValue({ fieldId: "custpage_filter_type" });
+    var suiteletUrl = url.resolveScript({
+      scriptId: "customscript1359",
+      deploymentId: "customdeploy1",
+      params: {
+        filterInitDate: initDate,
+        filterEndDate: finalDate,
+        filterType: filterType
+      },
+    });
+    window.location.href = suiteletUrl;
+  }
+
   return {
     fieldChanged: fieldChanged,
     validateLine: validateLine,
     saveRecord: saveRecord,
     sublistChanged: sublistChanged,
+    applyFilters: applyFilters,
   };
 });
