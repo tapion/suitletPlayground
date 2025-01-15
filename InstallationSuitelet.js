@@ -10,13 +10,100 @@ define([
   "N/record",
   "N/url",
   "N/redirect",
-], function (serverWidget, search, log, format, record, url, redirect) {
+  "N/runtime",
+], function (
+  serverWidget,
+  search,
+  log,
+  format,
+  record,
+  url,
+  redirect,
+  runtime
+) {
+  function parseDate(dateString) {
+    var formats = ["M/D/YYYY", "D/M/YYYY"];
+    var userDateFormat = runtime
+      .getCurrentUser()
+      .getPreference({ name: "dateformat" });
+    log.debug("userDateFormat:", userDateFormat);
+    for (var i = 0; i < formats.length; i++) {
+      try {
+        var date = format.parse({
+          value: dateString,
+          type: format.Type.DATE,
+        });
+        log.debug("date:", date);
+        if (!isNaN(date)) {
+          return formatDateForNetSuite(date);
+        }
+      } catch (e) {
+        log.debug(
+          "Date Parsing",
+          "Failed to parse date: " + dateString + " with format: " + formats[i]
+        );
+      }
+    }
+    return null;
+  }
+  function formatDateForURL(month, day, year) {
+    if (month.length < 2) month = "0" + month;
+    if (day.length < 2) day = "0" + day;
+    var userDateFormat = runtime
+      .getCurrentUser()
+      .getPreference({ name: "dateformat" });
+    if (userDateFormat === "DD/MM/YYYY") {
+      return [day, month, year].join("/");
+    } else if (userDateFormat === "MM/DD/YYYY") {
+      return [month, day, year].join("/");
+    }
+  }
+
   function onRequest(context) {
     var parameters = context.request.parameters;
-    var filterInitDate = parameters.filterInitDate || "";
-    var filterEndDate = parameters.filterEndDate || "";
     var filterType = parameters.filterType || "";
+    var filterInitDateDay = parameters.filterInitDateDay || "";
+    var filterInitDateMonth = parameters.filterInitDateMonth || "";
+    var filterInitDateYear = parameters.filterInitDateYear || "";
+    var filterEndDateDay = parameters.filterEndDateDay || "";
+    var filterEndDateMonth = parameters.filterEndDateMonth || "";
+    var filterEndDateYear = parameters.filterEndDateYear || "";
+    var initDateRow = parameters.initDateRow || "";
+    var finalDateRow = parameters.finalDateRow || "";
 
+    // var filterInitDate = filterInitDateDay ? parseDate(initDateRow) : "";
+    // var filterEndDate = filterEndDateDay ? parseDate(finalDateRow) : "";
+    var filterInitDate = filterInitDateDay
+      ? formatDateForURL(
+          filterInitDateMonth,
+          filterInitDateDay,
+          filterInitDateYear
+        )
+      : "";
+    var filterEndDate = filterEndDateDay
+      ? formatDateForURL(
+          filterEndDateMonth,
+          filterEndDateDay,
+          filterEndDateYear
+        )
+      : "";
+    // var filterInitDate = filterInitDateDay
+    //   ? formatDateForNetSuite(
+    //       filterInitDateMonth,
+    //       filterInitDateDay,
+    //       filterInitDateYear
+    //     )
+    //   : "";
+    // var filterEndDate = filterEndDateDay
+    //   ? formatDateForNetSuite(
+    //       filterEndDateMonth,
+    //       filterEndDateDay,
+    //       filterEndDateYear
+    //     )
+    //   : "";
+    log.debug("filterInitDate:", filterInitDate);
+    log.debug("filterEndDate:", filterEndDate);
+    log.debug("Lo que llega:", parameters);
     if (context.request.method === "GET") {
       var form = serverWidget.createForm({
         title: "Assets Installation",
@@ -126,12 +213,8 @@ define([
         type: serverWidget.FieldType.DATE,
         label: "Filter Final Date",
       });
-      filterInitDateField.defaultValue = filterInitDate
-        ? filterInitDate
-        : "";
-      filterEndDateField.defaultValue = filterEndDate
-        ? filterEndDate
-        : "";
+      filterInitDateField.defaultValue = filterInitDate ? filterInitDate : "";
+      filterEndDateField.defaultValue = filterEndDate ? filterEndDate : "";
 
       var filterTypeField = form.addField({
         id: "custpage_filter_type",
@@ -293,25 +376,6 @@ define([
             transactionRecord.commitLine({ sublistId: "line" });
 
             totalCreditAmount += parseFloat(debitAmount);
-
-            // var transaction = record.load({
-            //   type: transactionType,
-            //   id: transactionId,
-            // });
-
-            // transaction.setSublistValue({
-            //   sublistId: "line",
-            //   fieldId: "custcol_asset_ins_journal",
-            //   line: parseInt(lineIndex, 10) - 1, // Use the line index from search
-            //   value: transactionRecord.id,
-            // });
-            // transaction.save();
-
-            // log.debug("Updated Transaction", {
-            //   transactionId: transactionId,
-            //   lineIndex: lineIndex,
-            //   journalId: transactionRecord.id,
-            // });
           } else {
           }
         }
@@ -494,24 +558,17 @@ define([
       ["custcol_asset_ins_journal", search.Operator.ISEMPTY, ""],
     ];
     if (initDate) {
-      filters.push("AND", [
-        "trandate",
-        search.Operator.ONORAFTER,
-        initDate,
-      ]);
+      filters.push("AND", ["trandate", search.Operator.ONORAFTER, initDate]);
     }
     if (endDate) {
-      filters.push("AND", [
-        "trandate",
-        search.Operator.ONORBEFORE,
-        endDate,
-      ]);
+      filters.push("AND", ["trandate", search.Operator.ONORBEFORE, endDate]);
     }
 
     if (filterType) {
       filters.push("AND", ["type", search.Operator.ANYOF, [filterType]]);
     }
 
+    log.debug("Transaction Filters", filters);
     var options = [];
     var transactionSearch = search.create({
       type: search.Type.TRANSACTION,
@@ -542,6 +599,10 @@ define([
     });
 
     return options;
+  }
+
+  function formatDateForNetSuite(month, day, year) {
+    return month + "/" + day + "/" + year;
   }
 
   return {

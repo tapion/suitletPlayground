@@ -2,7 +2,11 @@
  * @NApiVersion 2.x
  * @NScriptType ClientScript
  */
-define(["N/currentRecord", "N/search", 'N/url'], function (currentRecord, search, url) {
+define(["N/currentRecord", "N/search", "N/url"], function (
+  currentRecord,
+  search,
+  url
+) {
   function fieldChanged(context) {
     var rec = context.currentRecord;
     var sublistName = context.sublistId;
@@ -227,25 +231,29 @@ define(["N/currentRecord", "N/search", 'N/url'], function (currentRecord, search
     var month = date.getMonth() + 1;
     var day = date.getDate();
     var year = date.getFullYear();
-    return day + "/" + month + "/" + year;
+    return { day: day, month: month, year: year };
   }
 
   function applyFilters() {
     var rec = currentRecord.get();
-    var initDate = formatDateForNetSuite(
-      rec.getValue({ fieldId: "custpage_filter_date_initial" })
-    );
-    var finalDate = formatDateForNetSuite(
-      rec.getValue({ fieldId: "custpage_filter_date_final" })
-    );
+    var initDateRow = rec.getValue({ fieldId: "custpage_filter_date_initial" });
+    var initDate = formatDateForNetSuite(initDateRow);
+    var finalDateRow = rec.getValue({ fieldId: "custpage_filter_date_final" });
+    var finalDate = formatDateForNetSuite(finalDateRow);
     var filterType = rec.getValue({ fieldId: "custpage_filter_type" });
     var suiteletUrl = url.resolveScript({
       scriptId: "customscript1359",
       deploymentId: "customdeploy1",
       params: {
-        filterInitDate: initDate,
-        filterEndDate: finalDate,
-        filterType: filterType
+        filterInitDateDay: initDate.day,
+        filterInitDateMonth: initDate.month,
+        filterInitDateYear: initDate.year,
+        filterEndDateDay: finalDate.day,
+        filterEndDateMonth: finalDate.month,
+        filterEndDateYear: finalDate.year,
+        filterType: filterType,
+        initDateRow: initDateRow,
+        finalDateRow: finalDateRow,
       },
     });
     window.location.href = suiteletUrl;
