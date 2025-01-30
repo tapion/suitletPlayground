@@ -46,6 +46,7 @@ define([
     }
     return null;
   }
+
   function formatDateForURL(month, day, year) {
     if (month.length < 2) month = "0" + month;
     if (day.length < 2) day = "0" + day;
@@ -517,9 +518,14 @@ define([
 
   function getFilteredAssets() {
     var options = [];
+    var DISPOSED = 4;
+    var filters = [];
+    filters.push(["custrecord_asset_allctstatus", search.Operator.ANYOF, "2"]);
+    filters.push("AND");
+    filters.push(["custrecord_assetstatus", "noneof", DISPOSED]);
     var assetSearch = search.create({
       type: "customrecord_ncfar_asset",
-      filters: [["custrecord_asset_allctstatus", search.Operator.ANYOF, "2"]],
+      filters: filters,
       columns: [
         search.createColumn({ name: "internalid" }),
         search.createColumn({ name: "name" }),

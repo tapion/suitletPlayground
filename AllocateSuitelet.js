@@ -1011,7 +1011,7 @@ define([
 
   function populateAssetOptions(type, customerId, siteId, assetField) {
     var filters = [];
-
+    var dispossed = 4;
     if (type === "warehouse") {
       filters.push(["custrecord_asset_customer", "anyof", "@NONE@"]);
       filters.push("AND");
@@ -1032,6 +1032,8 @@ define([
       }); // Add blank option
       return;
     }
+    filters.push("AND");
+    filters.push(["custrecord_assetstatus", "noneof", dispossed]);    
 
     var assetSearch = search.create({
       type: "customrecord_ncfar_asset",
